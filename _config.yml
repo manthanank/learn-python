@@ -1,0 +1,7 @@
+title: Learn Python
+description: Enterprise-Grade CPython Internals, Advanced Concurrency, Metaprogramming, and Architectural Reference Manual
+theme: jekyll-theme-cayman
+show_downloads: true
+github:
+  is_project_page: true
+  repository_url: https://github.com/manthanank/learn-python

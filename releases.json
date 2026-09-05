@@ -1,0 +1,14 @@
+[
+  {
+    "version": "v2.0.0",
+    "title": "v2.0.0 Enterprise Architecture & Interactive CPython Platform",
+    "date": "2025-09-05",
+    "notes": "Major modernization release: CPython internals engine, bytecode disassembler, memory model & GC explorer, event loop scheduler, descriptors & metaclass validator, FastAPI sandbox API, dark-mode glassmorphic dashboard, and 1200+ line authoritative masterclass manual."
+  },
+  {
+    "version": "v1.0.0",
+    "title": "v1.0.0 Initial Python Syntax Guide",
+    "date": "2025-01-01",
+    "notes": "Initial release of fundamental syntax, control flow, functions, and standard library basics."
+  }
+]

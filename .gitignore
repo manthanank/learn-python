@@ -169,3 +169,15 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Pytest cache & environments
+.pytest_cache/
+.env
+.env.local
+.venv/
+env/
+venv/
+ENV/
+*.log
+.DS_Store
+Thumbs.db

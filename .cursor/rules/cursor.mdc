@@ -1,0 +1,13 @@
+---
+description: Learn Python Project Rules & Guidelines
+globs: ["**/*.py", "**/*.html", "**/*.json"]
+alwaysApply: true
+---
+
+# Cursor Rules for Learn Python
+
+- **Target Interpreter**: Python 3.11+ (up to Python 3.13).
+- **Type Safety**: Apply PEP 484/585/604 type annotations everywhere. Avoid unconstrained `Any`.
+- **CPython Semantics**: Be precise regarding CPython memory management (ref counting, generational GC, cyclic refs, GIL).
+- **FastAPI Standards**: Use Pydantic v2 schemas (`BaseModel`, `Field`), dependency injection (`Depends`), and clear response models.
+- **Testing**: Maintain comprehensive unit tests in `tests/` using `pytest` and `httpx`.

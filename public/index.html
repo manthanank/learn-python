@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learn Python - Enterprise Architecture & CPython Internals Platform</title>
+  <meta name="description" content="Production-grade interactive platform for CPython internals, bytecode disassembler, memory & GC explorer, concurrency benchmarks, and staff-level curriculum.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0a0f1d;
+      --bg-card: rgba(18, 26, 47, 0.75);
+      --bg-card-hover: rgba(28, 40, 70, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(59, 130, 246, 0.3);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.25);
+      --secondary: #10b981;
+      --accent: #f59e0b;
+      --python-blue: #3776ab;
+      --python-yellow: #ffd43b;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at top right, #1e293b 0%, #0a0f1d 70%);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      backdrop-filter: blur(16px);
+      background: rgba(10, 15, 29, 0.8);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--python-blue), var(--python-yellow));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #0f172a;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .badge {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      background: var(--primary);
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    textarea, pre, code {
+      font-family: 'Fira Code', monospace;
+    }
+
+    .code-editor {
+      width: 100%;
+      height: 240px;
+      background: #060913;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      resize: vertical;
+      outline: none;
+    }
+
+    .code-editor:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      border: none;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .metric-val {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-top: 4px;
+    }
+
+    .metric-lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .console-out {
+      background: #060913;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      min-height: 180px;
+      max-height: 400px;
+      overflow-y: auto;
+      color: #38bdf8;
+      font-size: 0.85rem;
+    }
+
+    .faq-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+    }
+
+    .faq-header {
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+    }
+
+    .faq-header:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .faq-content {
+      padding: 0 1.25rem 1.25rem 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .faq-item.open .faq-content {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">Py</div>
+      <div>
+        <h1>Learn Python <span class="badge">v2.0.0 Enterprise</span></h1>
+      </div>
+    </div>
+
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-btn active" onclick="switchTab('tab-bytecode')" role="tab">Bytecode & AST</button>
+      <button class="tab-btn" onclick="switchTab('tab-memory')" role="tab">CPython Memory & GC</button>
+      <button class="tab-btn" onclick="switchTab('tab-concurrency')" role="tab">GIL & Concurrency</button>
+      <button class="tab-btn" onclick="switchTab('tab-metaprogramming')" role="tab">Metaprogramming</button>
+      <button class="tab-btn" onclick="switchTab('tab-eventloop')" role="tab">Event Loop</button>
+      <button class="tab-btn" onclick="switchTab('tab-interview')" role="tab">Staff QA</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- TAB 1: BYTECODE & AST -->
+    <section id="tab-bytecode" class="tab-pane active" role="tabpanel">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>Python Source Code</span>
+            <div>
+              <select id="bytecode-preset" onchange="loadPreset()" style="background:#0f172a; color:#fff; border:1px solid #334155; padding:4px 8px; border-radius:6px;">
+                <option value="math">Fibonacci & Conditionals</option>
+                <option value="comprehension">List Comprehension</option>
+                <option value="closure">Closure & Scopes</option>
+              </select>
+            </div>
+          </div>
+          <textarea id="source-input" class="code-editor">def fib(n):
+    if n <= 1:
+        return n
+    return fib(n - 1) + fib(n - 2)
+
+res = fib(5)</textarea>
+          <div style="margin-top: 1rem; display:flex; gap:10px;">
+            <button class="btn" onclick="runDisassemble()">⚡ Disassemble Bytecode</button>
+            <button class="btn btn-secondary" onclick="runSandbox()">▶ Run in Sandbox</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">CPython Compiler & AST Metrics</div>
+          <div class="metric-grid">
+            <div class="metric-box">
+              <div class="metric-lbl">Complexity</div>
+              <div id="m-complexity" class="metric-val">-</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-lbl">AST Nodes</div>
+              <div id="m-nodes" class="metric-val">-</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-lbl">Stack Depth</div>
+              <div id="m-stack" class="metric-val">-</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-lbl">Instructions</div>
+              <div id="m-instr-count" class="metric-val">-</div>
+            </div>
+          </div>
+
+          <div class="card-title">Disassembly Output</div>
+          <div style="max-height: 280px; overflow-y: auto;">
+            <table id="bytecode-table">
+              <thead>
+                <tr>
+                  <th>Offset</th>
+                  <th>Opname</th>
+                  <th>Arg</th>
+                  <th>ArgRepr</th>
+                  <th>Adaptive</th>
+                </tr>
+              </thead>
+              <tbody id="bytecode-tbody">
+                <tr><td colspan="5" style="text-align:center; color:#6b7280;">Click "Disassemble Bytecode" to view instructions</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-title">Execution Sandbox Output</div>
+        <pre id="sandbox-output" class="console-out">Ready for execution...</pre>
+      </div>
+    </section>
+
+    <!-- TAB 2: CPYTHON MEMORY & GC -->
+    <section id="tab-memory" class="tab-pane" role="tabpanel">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">CPython Generational Garbage Collector</div>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+            CPython couples immediate Reference Counting with a Tri-Generational Cyclic Garbage Collector (Gen 0, 1, 2) to eliminate circular references.
+          </p>
+          <div class="metric-grid">
+            <div class="metric-box">
+              <div class="metric-lbl">GC Status</div>
+              <div id="gc-enabled" class="metric-val">Active</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-lbl">Gen 0/1/2 Counts</div>
+              <div id="gc-counts" class="metric-val">-</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-lbl">Gen Thresholds</div>
+              <div id="gc-thresholds" class="metric-val">-</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn" onclick="fetchGCStatus()">🔄 Refresh GC Status</button>
+            <button class="btn btn-secondary" onclick="simulateCycle()">♻️ Simulate Cyclic Garbage Collection</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">PyObject Anatomy & Object Layout</div>
+          <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; font-size: 0.85rem;">
+            <h4 style="color:#60a5fa; margin-bottom: 6px;">Standard 64-bit PyObject Structure:</h4>
+            <pre style="color: #94a3b8; font-size: 0.8rem; line-height: 1.5;">
++-------------------+--------------------+------------------------+
+| ob_refcnt (8B)    | ob_type (8B)       | Object Data Payload    |
+| (Reference Count) | (Pointer to Type)  | (Value / Dict Pointer) |
++-------------------+--------------------+------------------------+
+            </pre>
+            <p style="color: var(--text-dim); margin-top: 8px;">
+              For containers (list, dict, tuple, user objects), a <code>PyGC_Head</code> (16 bytes) precedes the PyObject to link nodes in the generational doubly-linked lists.
+            </p>
+          </div>
+          <pre id="cycle-output" class="console-out" style="margin-top: 1rem; min-height: 140px;">Click "Simulate Cyclic Garbage Collection" to observe tracing GC collection stats.</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: CONCURRENCY & GIL -->
+    <section id="tab-concurrency" class="tab-pane" role="tabpanel">
+      <div class="card">
+        <div class="card-title">
+          <span>CPython GIL (Global Interpreter Lock) Performance Lab</span>
+          <button class="btn" onclick="runBenchmark()">🚀 Run Concurrency Benchmark</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+          Compare throughput and runtime overhead between Sequential Single-Threading, Multithreading (ThreadPoolExecutor - serialized by GIL), and Multiprocessing (ProcessPoolExecutor - true multicore parallel execution).
+        </p>
+        <div id="benchmark-results" style="max-height: 350px; overflow-y: auto;">
+          <pre class="console-out">Click "Run Concurrency Benchmark" to execute live workload simulations...</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: METAPROGRAMMING -->
+    <section id="tab-metaprogramming" class="tab-pane" role="tabpanel">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">C3 Linearization & MRO Inspector</div>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+            Python computes Method Resolution Order via the C3 Linearization algorithm (PEP 275), ensuring monotonicity and local precedence.
+          </p>
+          <button class="btn" onclick="fetchMRO()">🔍 Inspect Complex Diamond MRO</button>
+          <pre id="mro-output" class="console-out" style="margin-top: 1rem; min-height: 160px;">Click above to inspect C3 linearization.</pre>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Descriptor Protocol Mechanics</div>
+          <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; font-size: 0.85rem;">
+            <p style="color: #cbd5e1; margin-bottom: 8px;"><b>Descriptor Priority in Attribute Lookup:</b></p>
+            <ol style="padding-left: 20px; line-height: 1.8; color: var(--text-muted);">
+              <li><b>Data Descriptors</b> (implementing both <code>__get__</code> and <code>__set__</code>) take precedence over instance dictionary.</li>
+              <li><b>Instance <code>__dict__</code></b> is checked next.</li>
+              <li><b>Non-Data Descriptors</b> (implementing only <code>__get__</code>, e.g. normal methods) take effect if absent in instance dictionary.</li>
+              <li><b>Class <code>__dict__</code></b> is checked.</li>
+              <li><b><code>__getattr__</code></b> fallback is called if attribute lookup fails.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: EVENT LOOP -->
+    <section id="tab-eventloop" class="tab-pane" role="tabpanel">
+      <div class="card">
+        <div class="card-title">
+          <span>Micro-Coroutine Event Loop Scheduler</span>
+          <button class="btn" onclick="runEventLoop()">▶ Step Event Loop Scheduler</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+          Pure Python deterministic task scheduler demonstrating generator suspension, FIFO ready queue task slicing, and timer heap expiration.
+        </p>
+        <pre id="eventloop-output" class="console-out">Click "Step Event Loop Scheduler" to simulate task execution ticks...</pre>
+      </div>
+    </section>
+
+    <!-- TAB 6: STAFF QA -->
+    <section id="tab-interview" class="tab-pane" role="tabpanel">
+      <div class="card">
+        <div class="card-title">
+          <span>Staff & Principal Engineer Interview Questions</span>
+          <input type="text" id="qa-filter" oninput="filterQA()" placeholder="Filter questions..." style="background:#0f172a; color:#fff; border:1px solid #334155; padding:6px 12px; border-radius:6px; font-size:0.85rem; width:220px;">
+        </div>
+
+        <div id="qa-container">
+          <div class="faq-item">
+            <div class="faq-header" onclick="toggleFAQ(this)">
+              <span>1. How does CPython's memory allocator (PyMalloc) work, and why does it use Arenas, Pools, and Blocks?</span>
+              <span>▼</span>
+            </div>
+            <div class="faq-content">
+              CPython bypasses the OS <code>malloc()</code> for small object allocations (&le; 512 bytes) using PyMalloc to eliminate OS system call overhead and reduce heap fragmentation. The hierarchy consists of:
+              <ul>
+                <li><b>Arenas (256 KB):</b> Allocated directly from the OS virtual memory via <code>mmap</code> or <code>malloc</code>.</li>
+                <li><b>Pools (4 KB):</b> Carved out of arenas, each dedicated to a single fixed size-class (multiples of 8 bytes: 8, 16, 24, ... 512).</li>
+                <li><b>Blocks:</b> Slices within a pool allocated to individual PyObjects. Free blocks are tracked via singly-linked free-lists inside the pool header without extra metadata overhead.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-header" onclick="toggleFAQ(this)">
+              <span>2. Explain CPython's Generational Garbage Collector cycle detection algorithm.</span>
+              <span>▼</span>
+            </div>
+            <div class="faq-content">
+              Reference counting cannot reclaim cyclic references (e.g. A references B, and B references A). CPython solves this using a tri-generational tracing collector (Gen 0, 1, 2):
+              <ul>
+                <li>Every container PyObject is preceded by a <code>PyGC_Head</code> and linked into doubly-linked lists.</li>
+                <li>The GC copies <code>ob_refcnt</code> to a temporary <code>gc_refs</code> field.</li>
+                <li>For each object in the generation, it iterates over referenced objects using <code>tp_traverse</code> and decrements their <code>gc_refs</code>.</li>
+                <li>Objects whose <code>gc_refs</code> drops to 0 are exclusively referenced from within the cycle and marked as unreachable candidates.</li>
+                <li>Surviving objects are promoted to older generations (Gen 0 &rarr; Gen 1 &rarr; Gen 2).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-header" onclick="toggleFAQ(this)">
+              <span>3. How does Python 3.11+ Adaptive Specializing Bytecode (PEP 659) enhance runtime performance?</span>
+              <span>▼</span>
+            </div>
+            <div class="faq-content">
+              PEP 659 introduces a tier-1 adaptive interpreter. When generic instructions (such as <code>BINARY_OP</code>, <code>LOAD_GLOBAL</code>, or <code>CALL</code>) are executed repeatedly, the interpreter monitors the types passing through. If types stabilize (e.g. always adding two integers), the bytecode is dynamically replaced in-place with specialized instructions (like <code>BINARY_OP_ADD_INT</code>) accompanied by inline cache entries (<code>CACHE</code> ops). If the type assumption is later violated, it deoptimizes back to the generic opcode.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-header" onclick="toggleFAQ(this)">
+              <span>4. What is the difference between Data Descriptors and Non-Data Descriptors during attribute lookup?</span>
+              <span>▼</span>
+            </div>
+            <div class="faq-content">
+              A <b>Data Descriptor</b> defines <code>__set__</code> and/or <code>__delete__</code> (in addition to <code>__get__</code>). Because it controls mutation, Python gives it higher precedence than the instance's own <code>__dict__</code>. Conversely, a <b>Non-Data Descriptor</b> only implements <code>__get__</code> (such as regular methods); if an instance attribute exists with the same name in <code>instance.__dict__</code>, the instance attribute shadows the non-data descriptor.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function toggleFAQ(header) {
+      header.parentElement.classList.toggle('open');
+    }
+
+    function filterQA() {
+      const q = document.getElementById('qa-filter').value.toLowerCase();
+      document.querySelectorAll('.faq-item').forEach(item => {
+        const text = item.innerText.toLowerCase();
+        item.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    }
+
+    const presets = {
+      math: "def fib(n):\n    if n <= 1:\n        return n\n    return fib(n - 1) + fib(n - 2)\n\nres = fib(5)",
+      comprehension: "squares = [x * x for x in range(10) if x % 2 == 0]\nprint(squares)",
+      closure: "def make_multiplier(factor):\n    def multiply(x):\n        return x * factor\n    return multiply\n\ndbl = make_multiplier(2)\nres = dbl(21)"
+    };
+
+    function loadPreset() {
+      const sel = document.getElementById('bytecode-preset').value;
+      document.getElementById('source-input').value = presets[sel] || "";
+    }
+
+    async function runDisassemble() {
+      const code = document.getElementById('source-input').value;
+      try {
+        const res = await fetch('/api/bytecode/disassemble', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({code})
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.detail || 'Disassembly failed');
+
+        document.getElementById('m-complexity').innerText = data.cyclomatic_complexity;
+        document.getElementById('m-nodes').innerText = data.ast_node_count;
+        document.getElementById('m-stack').innerText = data.stack_size;
+        document.getElementById('m-instr-count').innerText = data.instructions.length;
+
+        const tbody = document.getElementById('bytecode-tbody');
+        tbody.innerHTML = data.instructions.map(inst => `
+          <tr>
+            <td><code>${inst.offset}</code></td>
+            <td style="color:#60a5fa; font-weight:600;">${inst.opname}</td>
+            <td>${inst.arg !== null ? inst.arg : ''}</td>
+            <td style="color:#34d399;">${inst.argrepr || ''}</td>
+            <td>${inst.is_adaptive ? '<span style="color:#f59e0b">Adaptive</span>' : '-'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        alert('Disassembly error: ' + err.message);
+      }
+    }
+
+    async function runSandbox() {
+      const code = document.getElementById('source-input').value;
+      const out = document.getElementById('sandbox-output');
+      out.innerText = "Executing...";
+      try {
+        const res = await fetch('/api/sandbox/execute', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({code})
+        });
+        const data = await res.json();
+        out.innerText = data.stdout + (data.error ? '\n[ERROR] ' + data.error : '') +
+          '\n\nVariables: ' + JSON.stringify(data.variables || {}, null, 2);
+      } catch (err) {
+        out.innerText = "Execution failed: " + err.message;
+      }
+    }
+
+    async function fetchGCStatus() {
+      try {
+        const res = await fetch('/api/memory/gc');
+        const data = await res.json();
+        document.getElementById('gc-enabled').innerText = data.is_enabled ? 'Active' : 'Disabled';
+        document.getElementById('gc-counts').innerText = data.counts.join(', ');
+        document.getElementById('gc-thresholds').innerText = data.thresholds.join(', ');
+      } catch(err) {
+        console.error(err);
+      }
+    }
+
+    async function simulateCycle() {
+      const out = document.getElementById('cycle-output');
+      out.innerText = "Simulating cyclic garbage creation and generational GC pass...";
+      try {
+        const res = await fetch('/api/memory/cyclic-garbage', {method: 'POST'});
+        const data = await res.json();
+        out.innerText = JSON.stringify(data, null, 2);
+        fetchGCStatus();
+      } catch(err) {
+        out.innerText = "Error: " + err.message;
+      }
+    }
+
+    async function runBenchmark() {
+      const container = document.getElementById('benchmark-results');
+      container.innerHTML = '<pre class="console-out">Running CPU and I/O benchmarks across Threading, Multiprocessing, and Asyncio...</pre>';
+      try {
+        const res = await fetch('/api/concurrency/benchmark');
+        const data = await res.json();
+        let html = '<table style="width:100%; border-collapse:collapse;"><thead><tr><th>Paradigm</th><th>Task Type</th><th>Workers</th><th>Time (s)</th><th>Throughput (ops/s)</th><th>GIL Impact</th></tr></thead><tbody>';
+        data.cpu_benchmarks.forEach(r => {
+          html += `<tr><td><b>${r.paradigm}</b></td><td>${r.task_type}</td><td>${r.workers}</td><td>${r.total_time_seconds}s</td><td style="color:#34d399; font-weight:700;">${r.throughput_ops_per_sec}</td><td style="color:#cbd5e1;">${r.gil_impact}</td></tr>`;
+        });
+        data.io_benchmarks.forEach(r => {
+          html += `<tr><td><b>${r.paradigm}</b></td><td>${r.task_type}</td><td>${r.workers}</td><td>${r.total_time_seconds}s</td><td style="color:#34d399; font-weight:700;">${r.throughput_ops_per_sec}</td><td style="color:#cbd5e1;">${r.gil_impact}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      } catch(err) {
+        container.innerHTML = `<pre class="console-out" style="color:#ef4444;">Benchmark failed: ${err.message}</pre>`;
+      }
+    }
+
+    async function fetchMRO() {
+      const out = document.getElementById('mro-output');
+      out.innerText = "Calculating C3 Linearization...";
+      try {
+        const res = await fetch('/api/runtime/mro');
+        const data = await res.json();
+        out.innerText = `Class Hierarchy: ${data.class_name}\nLinearization Order:\n` +
+          data.linearization_order.map((c, i) => `  ${i + 1}. ${c}`).join('\n') +
+          `\n\nAlgorithm: ${data.algorithm}`;
+      } catch(err) {
+        out.innerText = "Error: " + err.message;
+      }
+    }
+
+    async function runEventLoop() {
+      const out = document.getElementById('eventloop-output');
+      out.innerText = "Stepping micro-coroutine event loop scheduler...";
+      try {
+        const res = await fetch('/api/runtime/eventloop-demo', {method: 'POST'});
+        const data = await res.json();
+        out.innerText = `Total Ticks: ${data.total_ticks}\nTasks Scheduled: ${data.tasks_scheduled}\nEvents Recorded: ${data.events_recorded}\n\nExecution Log:\n` +
+          data.history.map(e => `[Tick ${e.tick}] ${e.event} ${e.task_id || ''} ${e.state || ''}`).join('\n');
+      } catch(err) {
+        out.innerText = "Error: " + err.message;
+      }
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchGCStatus();
+      runDisassemble();
+    });
+  </script>
+</body>
+</html>
