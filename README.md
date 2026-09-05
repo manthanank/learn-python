@@ -161,14 +161,14 @@ CPython is an interpreted, bytecode-based virtual machine written in ANSI C. Exe
 
 ```mermaid
 flowchart LR
-    Source[Python Source Code] --> Lexer[Tokenizer]
-    Lexer --> Parser[PEG Parser (Parser/pegen)]
-    Parser --> CST[Concrete Syntax Tree]
-    CST --> AST[Abstract Syntax Tree (Python/ast.c)]
-    AST --> SymTab[Symbol Table Analysis (Python/symtable.c)]
-    SymTab --> CFG[Control Flow Graph / Optimizer]
-    CFG --> Bytecode[CodeObject (.pyc Bytecode)]
-    Bytecode --> VM[CPython VM Execution Loop (ceval.c)]
+    Source["Python Source Code"] --> Lexer["Tokenizer"]
+    Lexer --> Parser["PEG Parser (Parser/pegen)"]
+    Parser --> CST["Concrete Syntax Tree"]
+    CST --> AST["Abstract Syntax Tree (Python/ast.c)"]
+    AST --> SymTab["Symbol Table Analysis (Python/symtable.c)"]
+    SymTab --> CFG["Control Flow Graph / Optimizer"]
+    CFG --> Bytecode["CodeObject (.pyc Bytecode)"]
+    Bytecode --> VM["CPython VM Execution Loop (ceval.c)"]
 ```
 
 1. **Tokenization (`Parser/lexer/`)**: Converts UTF-8 raw text into lexical tokens (keywords, literals, identifiers).
@@ -478,7 +478,9 @@ Python resolves multi-inheritance attributes using the **C3 Superclass Lineariza
 2. **Monotonicity**: If class $A$ precedes class $B$ in $C$'s MRO, $A$ must precede $B$ in all subclasses of $C$.
 
 #### The C3 Formula:
-$$L(C) = [C] + 	ext{merge}(L(B_1), L(B_2), \dots, L(B_n), [B_1, B_2, \dots, B_n])$$
+```text
+L(C) = [C] + merge(L(B_1), L(B_2), ..., L(B_n), [B_1, B_2, ..., B_n])
+```
 
 Where the `merge` operator selects the first candidate class whose tail does not contain that candidate in any subsequent list.
 
@@ -905,7 +907,9 @@ A **Data Descriptor** implements `__set__` or `__delete__` in addition to `__get
 ### Q5: How does the C3 Linearization algorithm calculate Method Resolution Order (MRO)?
 **Answer**:
 C3 merges the class's own list with the MROs of its base classes and the list of base classes itself:
-$$L(C) = [C] + 	ext{merge}(L(B_1), L(B_2), \dots, L(B_n), [B_1, \dots, B_n])$$
+```text
+L(C) = [C] + merge(L(B_1), L(B_2), ..., L(B_n), [B_1, ..., B_n])
+```
 The merge selects the head of the first list whose head does not appear in the tail of any other list. If all heads appear in tails, the inheritance hierarchy is rejected with `TypeError: Cannot create a consistent method resolution order (MRO)`.
 
 ---
