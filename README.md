@@ -1,4 +1,4 @@
-# Learn Python: Enterprise Architecture, CPython Internals & Production Systems
+# Learn Python: The Complete Beginner-to-Expert Masterclass
 
 [![CI Test Suite](https://github.com/manthanank/learn-python/actions/workflows/ci.yml/badge.svg)](https://github.com/manthanank/learn-python/actions/workflows/ci.yml)
 [![Docker Image](https://github.com/manthanank/learn-python/actions/workflows/docker.yml/badge.svg)](https://github.com/manthanank/learn-python/actions/workflows/docker.yml)
@@ -7,54 +7,71 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-An authoritative, enterprise-grade engineering reference manual and interactive platform for **CPython internals**, **virtual machine execution**, **memory management (PyMalloc & Generational GC)**, **the Global Interpreter Lock (GIL)**, **runtime metaprogramming**, **advanced concurrency (Asyncio & Multiprocessing)**, and **staff-level system architecture**.
+An exhaustive, authoritative **beginner-to-expert guide** and interactive platform for Python and CPython systems architecture. This curriculum begins with zero-prerequisite syntax, control flow, functions, and OOP foundations, advances into intermediate runtime mechanics and PEP 659 adaptive bytecode execution, dives into memory internals (PyMalloc, refcounting, generational GC) and descriptors, explores advanced concurrency (the GIL, PEP 703 free-threaded 3.13, Asyncio TaskGroups), and culminates in enterprise ASGI system design, profiling, and staff-level engineering.
+
+---
+
+## Pedagogical Roadmap: Beginner to Expert
+
+```text
++-----------------------------------------------------------------------------------------------+
+|                               THE PYTHON LEARNING JOURNEY                                     |
++-------------------+-------------------+-----------------------+-------------------------------+
+| STAGE 1           | STAGE 2           | STAGE 3               | STAGE 4 & 5                   |
+| Absolute Beginner | Intermediate Core | Advanced Internals    | Expert Concurrency & Staff    |
++-------------------+-------------------+-----------------------+-------------------------------+
+| • What is Python? | • Scope & LEGB    | • PyObject Layout     | • GIL & PEP 703 Free-Threaded |
+| • Dynamic/Strong  | • CPython VM & AST| • PyMalloc Arenas     | • Asyncio Event Loop & Tasks  |
+| • Types & Strings | • Bytecode & dis  | • Tracing GC & Cycles | • Descriptors & Metaclasses   |
+| • Control Flow    | • PEP 659 Adapt.  | • Slots & Interning   | • ASGI Systems & Profiling    |
+| • Lists/Dicts/Sets| • Frame Eval Loop | • C3 MRO Linearization| • 25 Staff Interview Q&A      |
++-------------------+-------------------+-----------------------+-------------------------------+
+```
 
 ---
 
 ## Table of Contents
-0. [Python as a Programming Language: Philosophy, Paradigms & Core Foundations](#0-python-as-a-programming-language-philosophy-paradigms--core-foundations)
+1. [Stage 1: Absolute Beginner Foundations](#1-stage-1-absolute-beginner-foundations)
    - [Language Taxonomy & Design Philosophy](#language-taxonomy--design-philosophy)
    - [The Zen of Python & Readability Conventions](#the-zen-of-python--readability-conventions)
    - [Dynamic & Strong Type System](#dynamic--strong-type-system)
    - [Core Syntax, Data Structures & Scoping (LEGB)](#core-syntax-data-structures--scoping-legb)
-1. [CPython Virtual Machine & Compilation Pipeline](#1-cpython-virtual-machine--compilation-pipeline)
+   - [Beginner Python Essentials: Syntax, Control Flow, Functions & OOP](#beginner-python-essentials-syntax-control-flow-functions--oop)
+2. [Stage 2: Intermediate Core & CPython Runtime](#2-stage-2-intermediate-core--cpython-runtime)
    - [The Compilation Pipeline (Source to Bytecode)](#the-compilation-pipeline-source-to-bytecode)
    - [CPython Execution Engine (`ceval.c`) & Frame Objects](#cpython-execution-engine-cevalc--frame-objects)
    - [PEP 659: Specializing Adaptive Interpreter (Python 3.11–3.13)](#pep-659-specializing-adaptive-interpreter-python-311313)
    - [Bytecode Opcode Taxonomy & Disassembly](#bytecode-opcode-taxonomy--disassembly)
-2. [Memory Architecture & Object Model](#2-memory-architecture--object-model)
+3. [Stage 3: Advanced Object Model & Memory Architecture](#3-stage-3-advanced-object-model--memory-architecture)
    - [PyObject & PyVarObject Memory Layout](#pyobject--pyvarobject-memory-layout)
    - [PyMalloc: Arenas, Pools, and Blocks](#pymalloc-arenas-pools-and-blocks)
    - [Reference Counting Mechanics & Deallocation](#reference-counting-mechanics--deallocation)
    - [Generational Tracing Garbage Collector](#generational-tracing-garbage-collector)
    - [Memory Optimization: Slots, Weakrefs, and Interning](#memory-optimization-slots-weakrefs-and-interning)
-3. [Object-Oriented Mechanics & Metaprogramming](#3-object-oriented-mechanics--metaprogramming)
    - [Attribute Resolution & Descriptor Protocol](#attribute-resolution--descriptor-protocol)
    - [Method Resolution Order (MRO) & C3 Linearization](#method-resolution-order-mro--c3-linearization)
    - [Metaclasses & Class Construction Pipeline](#metaclasses--class-construction-pipeline)
    - [Modern Alternatives: `__init_subclass__` & Class Decorators](#modern-alternatives-__init_subclass__--class-decorators)
-4. [Concurrency, Asyncio & the GIL](#4-concurrency-asyncio--the-gil)
+4. [Stage 4: Expert Concurrency, Asyncio & GIL Internals](#4-stage-4-expert-concurrency-asyncio--gil-internals)
    - [The Global Interpreter Lock (GIL) Mechanics](#the-global-interpreter-lock-gil-mechanics)
    - [Free-Threaded CPython (PEP 703 in Python 3.13)](#free-threaded-cpython-pep-703-in-python-313)
    - [Concurrency Matrix: Threading vs Multiprocessing vs Asyncio](#concurrency-matrix-threading-vs-multiprocessing-vs-asyncio)
    - [Asyncio Architecture: Event Loop, Coroutines & TaskGroups](#asyncio-architecture-event-loop-coroutines--taskgroups)
-5. [Functional Paradigms, Iteration & Context Management](#5-functional-paradigms-iteration--context-management)
    - [Generators, Coroutines & Two-Way Communication](#generators-coroutines--two-way-communication)
    - [Context Managers & Resource Guards](#context-managers--resource-guards)
    - [Advanced Functional Machinery (`functools` & `itertools`)](#advanced-functional-machinery-functools--itertools)
-6. [Enterprise Type System & Validation](#6-enterprise-type-system--validation)
+5. [Stage 5: Enterprise Systems Design & Production Engineering](#5-stage-5-enterprise-systems-design--production-engineering)
    - [Nominal vs Structural Typing (`typing.Protocol`)](#nominal-vs-structural-typing-typingprotocol)
    - [Generic Variance: Covariance, Contravariance, Invariance](#generic-variance-covariance-contravariance-invariance)
    - [Runtime Validation & Pydantic v2 Architecture](#runtime-validation--pydantic-v2-architecture)
-7. [Production System Design, Reliability & Observability](#7-production-system-design-reliability--observability)
    - [High-Throughput ASGI Architectures](#high-throughput-asgi-architectures)
    - [Exception Groups & Structured Error Handling](#exception-groups--structured-error-handling)
    - [Profiling, Memory Leaks & Observability](#profiling-memory-leaks--observability)
-8. [Staff & Principal Engineer Interview Masterclass (25 Q&A)](#8-staff--principal-engineer-interview-masterclass-25-qa)
-9. [Interactive Platform, Sandbox & API Reference](#9-interactive-platform-sandbox--api-reference)
+6. [Stage 6: Staff & Principal Python Interview Masterclass (25 Q&A)](#6-stage-6-staff--principal-python-interview-masterclass-25-qa)
+7. [Stage 7: Interactive Platform, Sandbox & API Reference](#7-stage-7-interactive-platform-sandbox--api-reference)
 
 ---
-## 0. Python as a Programming Language: Philosophy, Paradigms & Core Foundations
+## 1. Stage 1: Absolute Beginner Foundations
 
 Python is a **high-level, general-purpose, interpreted programming language** conceived by Guido van Rossum in 1989 and released in 1991. It is engineered with an uncompromising focus on code readability, expressiveness, and developer ergonomics. Today, Python serves as the foundational programming language for modern artificial intelligence, machine learning, data engineering, distributed backend microservices, scientific computing, and enterprise cloud automation.
 
@@ -154,7 +171,119 @@ print(outer())  # outputs 'mutated_enclosing'
 
 ---
 
-## 1. CPython Virtual Machine & Compilation Pipeline
+### Beginner Python Essentials: Syntax, Control Flow, Functions & OOP
+
+For engineers transitioning from other languages or starting from scratch, Python provides intuitive, human-readable syntax:
+
+#### 1. Variables, Formatted Strings & Primitives
+```python
+# Dynamic variable binding
+name: str = "Alice"
+age: int = 28
+balance: float = 1420.50
+is_active: bool = True
+
+# Modern formatted string literals (f-strings)
+greeting = f"User: {name}, Age: {age}, Balance: ${balance:,.2f}"
+print(greeting)  # User: Alice, Age: 28, Balance: $1,420.50
+```
+
+#### 2. Control Flow & Pattern Matching (PEP 634)
+```python
+# Standard Conditional Branching
+if age < 18:
+    status = "Minor"
+elif age < 65:
+    status = "Adult"
+else:
+    status = "Senior"
+
+# Structural Pattern Matching (Python 3.10+)
+command = ("navigate", 100, 250)
+match command:
+    case ("quit",):
+        print("Exiting application...")
+    case ("navigate", x, y) if x > 0 and y > 0:
+        print(f"Plotting route to coordinates ({x}, {y})")
+    case _:
+        print("Unknown command format")
+```
+
+#### 3. Data Structures & Comprehensions
+```python
+# Lists (Ordered, dynamic arrays)
+fruits = ["apple", "banana", "cherry"]
+fruits.append("date")
+
+# Dicts (Key-value hash maps, insertion-ordered)
+user = {"id": 101, "role": "admin", "permissions": ["read", "write"]}
+
+# List & Dict Comprehensions (Declarative transformations)
+squares = [x**2 for x in range(10) if x % 2 == 0]
+# [0, 4, 16, 36, 64]
+
+cube_map = {x: x**3 for x in range(5)}
+# {0: 0, 1: 1, 2: 8, 3: 27, 4: 64}
+```
+
+#### 4. Functions, Variadic Arguments & Keyword Unpacking
+```python
+def calculate_metrics(base: float, *modifiers: float, factor: float = 1.0, **metadata) -> float:
+    '''Calculate aggregated metric score with dynamic weights.'''
+    total = (base + sum(modifiers)) * factor
+    print(f"Logged metadata: {metadata}")
+    return total
+
+score = calculate_metrics(100.0, 5.0, 15.0, factor=1.2, region="us-east", department="data")
+# total = (100 + 20) * 1.2 = 144.0
+```
+
+#### 5. Exception Handling
+```python
+def safe_divide(numerator: float, denominator: float) -> float:
+    try:
+        result = numerator / denominator
+    except ZeroDivisionError as err:
+        print(f"Calculation error: {err}")
+        return 0.0
+    else:
+        print("Division completed successfully.")
+        return result
+    finally:
+        print("Execution cleanup guard invoked.")
+```
+
+#### 6. Object-Oriented Programming Fundamentals
+```python
+class Account:
+    '''Base bank account class demonstrating OOP encapsulation.'''
+    def __init__(self, owner: str, initial_balance: float = 0.0):
+        self.owner = owner
+        self._balance = initial_balance  # Protected attribute convention
+
+    def deposit(self, amount: float) -> None:
+        if amount <= 0:
+            raise ValueError("Deposit amount must be positive.")
+        self._balance += amount
+
+    @property
+    def balance(self) -> float:
+        return self._balance
+
+class SavingsAccount(Account):
+    '''Derived class demonstrating inheritance and method extension.'''
+    def __init__(self, owner: str, initial_balance: float = 0.0, interest_rate: float = 0.05):
+        super().__init__(owner, initial_balance)
+        self.interest_rate = interest_rate
+
+    def apply_interest(self) -> None:
+        self._balance += self._balance * self.interest_rate
+```
+
+
+---
+
+## 2. Stage 2: Intermediate Core & CPython Runtime
 
 ### The Compilation Pipeline (Source to Bytecode)
 CPython is an interpreted, bytecode-based virtual machine written in ANSI C. Execution undergoes a rigorous multi-stage pipeline:
@@ -261,7 +390,7 @@ dis.dis(calculate_tax)
 ```
 
 ---
-## 2. Memory Architecture & Object Model
+## 3. Stage 3: Advanced Object Model & Memory Architecture
 
 ### PyObject & PyVarObject Memory Layout
 
@@ -305,13 +434,13 @@ To prevent heap fragmentation and avoid OS kernel context switches from frequent
 
 ```mermaid
 flowchart TD
-    OS[Operating System Heap] -->|mmap / malloc 256KB| Arena[Arena: 256 KB Chunk]
-    Arena --> Pool1[Pool 0: 4 KB (Size-Class 8B)]
-    Arena --> Pool2[Pool 1: 4 KB (Size-Class 16B)]
-    Arena --> PoolN[Pool 63: 4 KB (Size-Class 512B)]
-    Pool1 --> Block1[Block: 8 Bytes]
-    Pool1 --> Block2[Block: 8 Bytes]
-    Pool1 --> BlockK[Block: 8 Bytes]
+    OS["Operating System Heap"] -->|mmap / malloc 256KB| Arena["Arena: 256 KB Chunk"]
+    Arena --> Pool1["Pool 0: 4 KB (Size-Class 8B)"]
+    Arena --> Pool2["Pool 1: 4 KB (Size-Class 16B)"]
+    Arena --> PoolN["Pool 63: 4 KB (Size-Class 512B)"]
+    Pool1 --> Block1["Block: 8 Bytes"]
+    Pool1 --> Block2["Block: 8 Bytes"]
+    Pool1 --> BlockK["Block: 8 Bytes"]
 ```
 
 1. **Allocations &le; 512 Bytes**: Routed to PyMalloc.
@@ -427,7 +556,7 @@ print(ref())      # None (reclaimed without cycle leak)
 ```
 
 ---
-## 3. Object-Oriented Mechanics & Metaprogramming
+### Object-Oriented Mechanics & Metaprogramming
 
 ### Attribute Resolution & Descriptor Protocol
 
@@ -557,7 +686,7 @@ print(User.table_name)  # "auth_users"
 ```
 
 ---
-## 4. Concurrency, Asyncio & the GIL
+## 4. Stage 4: Expert Concurrency, Asyncio & GIL Internals
 
 ### The Global Interpreter Lock (GIL) Mechanics
 
@@ -601,9 +730,9 @@ Asyncio executes cooperative coroutines over an I/O multiplexing event loop (usi
 
 ```mermaid
 flowchart TD
-    Loop[Asyncio Event Loop] --> ReadyQueue[Ready Tasks Queue]
-    Loop --> Selectors[I/O Multiplexer: epoll/kqueue/IOCP]
-    Loop --> Timers[Timer Min-Heap: asyncio.sleep]
+    Loop["Asyncio Event Loop"] --> ReadyQueue["Ready Tasks Queue"]
+    Loop --> Selectors["I/O Multiplexer: epoll / kqueue / IOCP"]
+    Loop --> Timers["Timer Min-Heap: asyncio.sleep"]
     ReadyQueue -->|Step Task| Coro["Coroutine execution until await"]
     Coro -->|Suspends at I/O| Selectors
     Selectors -->|OS Event Ready| ReadyQueue
@@ -635,7 +764,7 @@ asyncio.run(main())
 ```
 
 ---
-## 5. Functional Paradigms, Iteration & Context Management
+### Functional Paradigms, Iteration & Context Management
 
 ### Generators, Coroutines & Two-Way Communication
 
@@ -726,7 +855,7 @@ for batch in itertools.batched(range(10), 3):
 ```
 
 ---
-## 6. Enterprise Type System & Validation
+## 5. Stage 5: Enterprise Systems Design & Production Engineering
 
 ### Nominal vs Structural Typing (`typing.Protocol`)
 
@@ -804,7 +933,7 @@ class UserProfile(BaseModel):
 ```
 
 ---
-## 7. Production System Design, Reliability & Observability
+### Production System Design, Reliability & Observability
 
 ### High-Throughput ASGI Architectures
 
@@ -869,7 +998,7 @@ for stat in top_stats[:5]:
 ```
 
 ---
-## 8. Staff & Principal Engineer Interview Masterclass (25 Q&A)
+## 6. Stage 6: Staff & Principal Python Interview Masterclass (25 Q&A)
 
 ### Q1: How does CPython's memory allocator (PyMalloc) work, and why does it use Arenas, Pools, and Blocks?
 **Answer**:
@@ -1073,7 +1202,7 @@ Guards (`if x > 0`) allow conditional filtering after pattern destructuring succ
 `singledispatch` wraps a base function and maintains an internal `dispatch_cache` mapping runtime types to specialized implementations. Upon invocation, it checks the type of the first argument, resolves the closest match using the argument's MRO, caches the resolved function, and dispatches the call with near-zero overhead.
 
 ---
-## 9. Interactive Platform, Sandbox & API Reference
+## 7. Stage 7: Interactive Platform, Sandbox & API Reference
 
 ### Running the Interactive Web Platform
 
