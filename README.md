@@ -173,113 +173,385 @@ print(outer())  # outputs 'mutated_enclosing'
 
 ### Beginner Python Essentials: Syntax, Control Flow, Functions & OOP
 
-For engineers transitioning from other languages or starting from scratch, Python provides intuitive, human-readable syntax:
+---
 
 #### 1. Variables, Formatted Strings & Primitives
-```python
-# Dynamic variable binding
-name: str = "Alice"
-age: int = 28
-balance: float = 1420.50
-is_active: bool = True
 
-# Modern formatted string literals (f-strings)
-greeting = f"User: {name}, Age: {age}, Balance: ${balance:,.2f}"
-print(greeting)  # User: Alice, Age: 28, Balance: $1,420.50
+In Python, variables do not store values directly as fixed memory addresses. Instead, **variables are dynamic name references (labels) bound to heap-allocated objects**. 
+
+```python
+# 1. Variable Binding and Type Annotations (PEP 484)
+user_name: str = "Alice"           # Binds 'user_name' to a PyUnicodeObject ("Alice")
+user_age: int = 28                 # Binds 'user_age' to a PyLongObject (28)
+account_balance: float = 1420.50   # Binds 'account_balance' to a PyFloatObject (1420.50)
+is_authenticated: bool = True      # Binds to the PyBool singleton True
+
+# 2. Modern Formatted String Literals (f-strings, PEP 498 & PEP 701)
+# Expressions inside curly braces {} evaluate dynamically at runtime
+formatted_summary = (
+    f"Customer: {user_name.upper()} | "
+    f"Age: {user_age} | "
+    f"Balance: ${account_balance:,.2f} | "
+    f"Active: {is_authenticated}"
+)
+print(formatted_summary)
+# Output: Customer: ALICE | Age: 28 | Balance: $1,420.50 | Active: True
+
+# 3. Inline Debug Expressions (Python 3.8+)
+print(f"{user_age * 2 = }")
+# Output: user_age * 2 = 56
 ```
+
+##### Deep-Dive Line-by-Line Explanation:
+1. `user_name: str = "Alice"`:
+   - **Type Hint (`: str`)**: Informs static analysis tools (e.g. `mypy`, `pyright`, IDEs) of the intended data type. CPython ignores type hints at runtime (zero runtime overhead).
+   - **Assignment (`=`)**: Evaluates the right-hand side, allocates a `PyUnicodeObject` containing `"Alice"` on the heap, and inserts the key `"user_name"` pointing to that object's memory address into the current local scope dictionary.
+2. `account_balance: float = 1420.50`:
+   - Allocates an IEEE 754 double-precision 64-bit float.
+3. `f"Customer: {user_name.upper()} ... ${account_balance:,.2f}"`:
+   - **`user_name.upper()`**: Evaluates arbitrary Python expressions directly inside `{}` brackets at runtime, invoking the string method to convert to uppercase.
+   - **`:,.2f` Format Specifier**: `,` adds a thousands separator comma (`1,420`), and `.2f` rounds and formats to exactly two decimal digits (`.50`).
+4. `f"{user_age * 2 = }"`:
+   - The trailing `=` syntax automatically prints both the expression text and its evaluated result, drastically simplifying debug logging.
+
+##### Common Pitfalls & Best Practices:
+- **Never use mutable default variable references** across threads without locking.
+- **Float Precision Traps**: Remember that binary floats cannot represent decimal fractions precisely (e.g. `0.1 + 0.2 == 0.30000000000000004`). For financial systems, always use the standard `decimal.Decimal` class instead of `float`.
+
+---
 
 #### 2. Control Flow & Pattern Matching (PEP 634)
-```python
-# Standard Conditional Branching
-if age < 18:
-    status = "Minor"
-elif age < 65:
-    status = "Adult"
-else:
-    status = "Senior"
 
-# Structural Pattern Matching (Python 3.10+)
-command = ("navigate", 100, 250)
-match command:
-    case ("quit",):
-        print("Exiting application...")
-    case ("navigate", x, y) if x > 0 and y > 0:
-        print(f"Plotting route to coordinates ({x}, {y})")
-    case _:
-        print("Unknown command format")
+Control flow directs execution paths based on Boolean conditions. In Python, blocks of code are delineated exclusively by **whitespace indentation (typically 4 spaces)** rather than curly braces `{}`.
+
+```python
+# 1. Standard Conditional Branching (if / elif / else)
+def classify_user_tier(age: int, is_subscriber: bool) -> str:
+    if age < 0:
+        raise ValueError("Age cannot be negative.")
+    elif age < 18:
+        return "Junior Member"
+    elif age >= 18 and is_subscriber:
+        return "Premium Adult Member"
+    else:
+        return "Standard Adult Member"
+
+# 2. Pythonic Looping & The 'else' Clause on Loops
+items = ["order_101", "order_102", "order_103"]
+search_target = "order_104"
+
+for item in items:
+    if item == search_target:
+        print(f"Found target item: {item}")
+        break
+else:
+    # Executes ONLY if the loop completes without encountering a 'break' statement!
+    print(f"Target '{search_target}' not found in catalogue.")
+
+# 3. Structural Pattern Matching (match / case - PEP 634)
+# Powerful destructuring of sequences, dictionaries, and class instances
+def route_event(event: dict[str, object]) -> str:
+    match event:
+        case {"type": "auth", "status": "success", "user": str(username)}:
+            return f"User logged in: {username}"
+        case {"type": "auth", "status": "failure", "code": int(code)} if code >= 500:
+            return f"Server authentication error: HTTP {code}"
+        case {"type": "transfer", "amount": float(amt)} if amt > 10000.0:
+            return f"Flagged high-value transaction for compliance review: ${amt:,.2f}"
+        case {"type": "transfer", "amount": float(amt)}:
+            return f"Standard transfer approved: ${amt:,.2f}"
+        case _:
+            # Wildcard case (_) captures any unrecognized payload structure
+            return "Unrecognized event schema"
 ```
+
+##### Deep-Dive Line-by-Line Explanation:
+1. `if age >= 18 and is_subscriber`:
+   - Evaluates boolean expressions using **short-circuit evaluation**: If `age >= 18` is `False`, Python skips evaluating `is_subscriber` entirely, saving CPU cycles.
+2. `for item in items: ... else:`:
+   - Python's unique `else` clause attached to `for` or `while` loops runs **only when the loop terminates naturally** (by exhausting the iterator). If the loop exits via `break`, the `else` block is bypassed entirely. This eliminates the need for manual boolean flags (`found = False`).
+3. `match event:` / `case {"type": "auth", "user": str(username)}`:
+   - **Destructuring Validation**: Checks that `event` is a dictionary, contains key `"type"` with value `"auth"`, and that key `"user"` is an instance of `str`. If so, it extracts the value directly into a new local variable `username`.
+4. `if code >= 500` (**Pattern Guards**):
+   - Adds conditional boolean filtering *after* the structural shape of the pattern has successfully matched.
+5. `case _:`:
+   - The wildcard pattern acts as the fallback default branch, identical to `default:` in C/Java switch statements.
+
+---
 
 #### 3. Data Structures & Comprehensions
+
+Python provides four foundational built-in collection types, each with distinct performance characteristics:
+
 ```python
-# Lists (Ordered, dynamic arrays)
-fruits = ["apple", "banana", "cherry"]
-fruits.append("date")
+# 1. Lists: Ordered, mutable, dynamic pointer arrays
+fruits: list[str] = ["apple", "banana", "cherry"]
+fruits.append("date")        # Amortized O(1) append at the end
+fruits.insert(0, "avocado")  # O(N) insertion at the beginning (shifts all elements)
 
-# Dicts (Key-value hash maps, insertion-ordered)
-user = {"id": 101, "role": "admin", "permissions": ["read", "write"]}
+# 2. Tuples: Ordered, immutable sequences (Safe for dict keys if elements are hashable)
+coordinates: tuple[int, int, int] = (1920, 1080, 60)
 
-# List & Dict Comprehensions (Declarative transformations)
-squares = [x**2 for x in range(10) if x % 2 == 0]
-# [0, 4, 16, 36, 64]
+# 3. Dictionaries: Key-value hash maps (Insertion-ordered since Python 3.7)
+user_profile: dict[str, object] = {
+    "user_id": 1001,
+    "email": "user@example.com",
+    "roles": ["admin", "auditor"]
+}
+# Safe retrieval with fallback default
+role = user_profile.get("department", "Engineering")
 
-cube_map = {x: x**3 for x in range(5)}
-# {0: 0, 1: 1, 2: 8, 3: 27, 4: 64}
+# 4. Sets: Unordered collections of unique, hashable items (O(1) average lookup)
+active_ids: set[int] = {101, 102, 103, 101}  # Automatically deduplicates to {101, 102, 103}
+required_ids: set[int] = {102, 104}
+
+# Mathematical Set Algebra
+missing_ids = required_ids - active_ids      # Difference: {104}
+common_ids = active_ids & required_ids        # Intersection: {102}
+
+# 5. Declarative Comprehensions
+# List comprehension (replaces verbose append loops, executed in C-level bytecode)
+even_squares = [n**2 for n in range(20) if n % 2 == 0]
+
+# Dict comprehension (inverting a mapping)
+code_to_name = {1: "Pending", 2: "Approved", 3: "Rejected"}
+name_to_code = {v: k for k, v in code_to_name.items()}
 ```
+
+##### Deep-Dive Line-by-Line Explanation:
+1. `fruits.append("date")`:
+   - CPython allocates lists with geometric over-allocation (`0, 4, 8, 16, 25, 35, 46, ...` slots). When `append()` is called within allocated capacity, it places a pointer in memory in $O(1)$ time without resizing.
+2. `user_profile.get("department", "Engineering")`:
+   - Directly indexing `user_profile["department"]` raises a `KeyError` if the key is missing. `.get(key, default)` returns `"Engineering"` gracefully without throwing exceptions.
+3. `even_squares = [n**2 for n in range(20) if n % 2 == 0]`:
+   - **Comprehension Syntax**: `[<expression> for <item> in <iterable> if <condition>]`.
+   - CPython compiles comprehensions into an isolated code object that uses the fast `LIST_APPEND` bytecode opcode, executing significantly faster than a manual Python `for` loop with `.append()`.
+
+---
 
 #### 4. Functions, Variadic Arguments & Keyword Unpacking
-```python
-def calculate_metrics(base: float, *modifiers: float, factor: float = 1.0, **metadata) -> float:
-    '''Calculate aggregated metric score with dynamic weights.'''
-    total = (base + sum(modifiers)) * factor
-    print(f"Logged metadata: {metadata}")
-    return total
 
-score = calculate_metrics(100.0, 5.0, 15.0, factor=1.2, region="us-east", department="data")
-# total = (100 + 20) * 1.2 = 144.0
+Functions in Python are **first-class citizens**: they can be passed as arguments, returned from other functions, stored in data structures, and assigned attributes.
+
+```python
+# 1. Flexible Parameter Signatures (*args, **kwargs, Keyword-Only)
+def create_service_endpoint(
+    service_name: str,                # Standard positional-or-keyword argument
+    *endpoints: str,                  # *args: Packs extra positional arguments into a tuple
+    port: int = 8080,                 # Keyword argument with default value
+    enable_ssl: bool = True,          # Keyword argument with default value
+    **headers: str                    # **kwargs: Packs extra keyword arguments into a dict
+) -> dict[str, object]:
+    '''Constructs a service routing configuration object with dynamic headers.'''
+    return {
+        "service": service_name,
+        "routes": list(endpoints),
+        "port": port,
+        "ssl": enable_ssl,
+        "custom_headers": headers
+    }
+
+# Invoking with positional args, keyword args, and unpacked containers
+routes = ["/api/v1/users", "/api/v1/health"]
+extra_meta = {"X-Cluster-ID": "us-east-1", "X-Trace-ID": "tr-98721"}
+
+config = create_service_endpoint(
+    "auth-service",
+    *routes,                          # Unpacks list into positional arguments (*args)
+    port=443,
+    enable_ssl=True,
+    **extra_meta                      # Unpacks dictionary into keyword arguments (**kwargs)
+)
+
+# 2. Keyword-Only Arguments via bare '*'
+def secure_query(query: str, *, timeout: int = 30, use_cache: bool = True) -> None:
+    '''Enforces callers to explicitly name 'timeout' and 'use_cache'.'''
+    pass
+
+# secure_query("SELECT 1", 10, False)  # Raises TypeError: takes 1 positional argument
+secure_query("SELECT 1", timeout=10, use_cache=False)  # Fully Valid & Self-Documenting
 ```
 
-#### 5. Exception Handling
+##### Deep-Dive Line-by-Line Explanation:
+1. `*endpoints: str`:
+   - Any extra positional arguments supplied after `service_name` are collected into a tuple bound to `endpoints`. Inside the function, you can iterate over it or convert it to a list.
+2. `**headers: str`:
+   - Any extra keyword arguments passed in the call (e.g. `X-Cluster-ID="us-east-1"`) are captured into a dictionary bound to `headers`.
+3. `def secure_query(query: str, *, timeout: int)`:
+   - The bare `*` acts as a delimiter: any parameters defined **after** `*` cannot be passed positionally. Callers are forced to write `timeout=10`. This eliminates bugs where numbers are passed in the wrong order.
+
+##### The Infamous "Mutable Default Argument" Trap:
 ```python
-def safe_divide(numerator: float, denominator: float) -> float:
+# ANTI-PATTERN: Default list is instantiated ONCE when function is compiled, NOT per call!
+def append_to_cache(item: int, cache: list[int] = []) -> list[int]:
+    cache.append(item)
+    return cache
+
+print(append_to_cache(1))  # [1]
+print(append_to_cache(2))  # [1, 2] -- The cache persisted across calls!
+
+# PRODUCTION PATTERN: Use None as default and instantiate inside function body
+def append_to_cache_safe(item: int, cache: list[int] | None = None) -> list[int]:
+    if cache is None:
+        cache = []
+    cache.append(item)
+    return cache
+```
+
+---
+
+#### 5. Exception Handling & Safe Resource Cleanup
+
+Robust enterprise software must anticipate failures (network timeouts, missing files, corrupted payloads). Python uses structured exception handling with `try`, `except`, `else`, and `finally`:
+
+```python
+# 1. Custom Application Exception Hierarchy
+class ApplicationError(Exception):
+    '''Base domain exception for application services.'''
+    pass
+
+class DatabaseConnectionError(ApplicationError):
+    '''Raised when database fails to respond within timeout window.'''
+    def __init__(self, host: str, port: int, original_error: Exception):
+        self.host = host
+        self.port = port
+        self.original_error = original_error
+        super().__init__(f"Failed to connect to {host}:{port}. Reason: {original_error}")
+
+# 2. Comprehensive Exception Workflow
+def query_database(host: str, port: int, sql: str) -> list[dict[str, object]]:
+    connection = None
     try:
-        result = numerator / denominator
-    except ZeroDivisionError as err:
-        print(f"Calculation error: {err}")
-        return 0.0
+        # Code that may raise exceptions
+        if host == "unreachable.internal":
+            raise TimeoutError("Network unreachable")
+        connection = f"Connected to {host}:{port}"
+        print(f"Executing query: {sql} on {connection}")
+        return [{"id": 1, "status": "active"}]
+        
+    except TimeoutError as err:
+        # Catch specific error, wrap in domain exception, and preserve traceback (PEP 3134)
+        raise DatabaseConnectionError(host, port, err) from err
+        
+    except Exception as err:
+        # Fallback catch-all for unforeseen system errors
+        print(f"Unexpected system error: {err}")
+        raise
+        
     else:
-        print("Division completed successfully.")
-        return result
+        # Executes ONLY if the try block completed with ZERO exceptions raised!
+        print("Query completed successfully with no errors.")
+        
     finally:
-        print("Execution cleanup guard invoked.")
+        # Guaranteed to execute under ALL circumstances (success, exception, or early return)
+        print("Cleaning up database connection resources.")
+        if connection:
+            connection = None
 ```
+
+##### Deep-Dive Line-by-Line Explanation:
+1. `class DatabaseConnectionError(ApplicationError):`:
+   - Inheriting from a base domain exception allows calling code to catch high-level errors (`except ApplicationError`) while maintaining precise error context.
+2. `raise DatabaseConnectionError(...) from err` (**Exception Chaining**):
+   - The `from err` clause links the original low-level `TimeoutError` to the high-level `DatabaseConnectionError`. CPython prints both stack traces (`The above exception was the direct cause of the following exception`), eliminating hidden root causes during production incident debugging.
+3. `else:`:
+   - Contains logic that should run only when no exceptions occurred in the `try` block. Keeping this separate from `try` prevents accidentally catching exceptions raised by the success-handling code itself.
+4. `finally:`:
+   - Always executes, even if an unhandled exception is propagating up the call stack or a `return` statement was executed inside `try`. Indispensable for closing file descriptors, returning database connections to connection pools, and releasing mutex locks.
+
+---
 
 #### 6. Object-Oriented Programming Fundamentals
-```python
-class Account:
-    '''Base bank account class demonstrating OOP encapsulation.'''
-    def __init__(self, owner: str, initial_balance: float = 0.0):
-        self.owner = owner
-        self._balance = initial_balance  # Protected attribute convention
 
-    def deposit(self, amount: float) -> None:
+Python implements pure object-orientation: classes are templates for objects, and classes themselves are instances of `type`.
+
+```python
+class BankAccount:
+    '''Demonstrates encapsulation, class attributes, properties, and magic methods.'''
+    
+    # Class Attribute: Shared across ALL instances of BankAccount
+    MINIMUM_DEPOSIT: float = 10.00
+    _total_accounts_created: int = 0
+    
+    def __init__(self, account_holder: str, initial_deposit: float = 10.00) -> None:
+        '''Constructor method initializing per-instance state.'''
+        if initial_deposit < self.MINIMUM_DEPOSIT:
+            raise ValueError(f"Initial deposit must be at least ${self.MINIMUM_DEPOSIT:.2f}")
+            
+        self.holder: str = account_holder              # Public instance attribute
+        self._balance: float = initial_deposit          # Protected attribute convention (internal use)
+        self.__security_pin: int = 1234                 # Private attribute (triggers name mangling)
+        BankAccount._total_accounts_created += 1
+
+    # Getter property: Allows reading balance like an attribute (account.balance)
+    @property
+    def balance(self) -> float:
+        '''Current cleared balance of the account.'''
+        return self._balance
+
+    # Setter property: Validates mutations before modifying internal state
+    @balance.setter
+    def balance(self, new_balance: float) -> None:
+        if new_balance < 0:
+            raise ValueError("Account balance cannot be negative.")
+        self._balance = new_balance
+
+    # Instance method: Operates on 'self' (the specific account instance)
+    def deposit(self, amount: float) -> float:
         if amount <= 0:
             raise ValueError("Deposit amount must be positive.")
         self._balance += amount
-
-    @property
-    def balance(self) -> float:
         return self._balance
 
-class SavingsAccount(Account):
-    '''Derived class demonstrating inheritance and method extension.'''
-    def __init__(self, owner: str, initial_balance: float = 0.0, interest_rate: float = 0.05):
-        super().__init__(owner, initial_balance)
-        self.interest_rate = interest_rate
+    # Class method: Receives 'cls' (the BankAccount class itself), not 'self'
+    @classmethod
+    def get_total_accounts(cls) -> int:
+        return cls._total_accounts_created
 
-    def apply_interest(self) -> None:
-        self._balance += self._balance * self.interest_rate
+    # Static method: Utility function without access to 'self' or 'cls'
+    @staticmethod
+    def calculate_compound_interest(principal: float, rate: float, years: int) -> float:
+        return principal * ((1 + rate) ** years)
+
+    # String representation for end-users (str(account) or print(account))
+    def __str__(self) -> str:
+        return f"BankAccount(Holder: {self.holder}, Balance: ${self._balance:,.2f})"
+
+    # Official unambiguous string representation for developers (repr(account))
+    def __repr__(self) -> str:
+        return f"BankAccount(account_holder='{self.holder}', initial_deposit={self._balance})"
+
+
+# Derived Class (Inheritance and Polymorphism)
+class HighYieldSavingsAccount(BankAccount):
+    '''Specialized account with interest accumulation.'''
+    
+    def __init__(self, account_holder: str, initial_deposit: float, apy: float = 0.045) -> None:
+        # Delegate initialization of base class attributes to BankAccount.__init__
+        super().__init__(account_holder, initial_deposit)
+        self.apy: float = apy
+
+    def apply_monthly_yield(self) -> float:
+        '''Applies monthly compounding interest.'''
+        monthly_rate = self.apy / 12
+        earned = self._balance * monthly_rate
+        self.deposit(earned)
+        return earned
 ```
 
+##### Deep-Dive Line-by-Line Explanation:
+1. `def __init__(self, account_holder: str, ...)`:
+   - **`self`**: When you execute `acc = BankAccount("Alice")`, Python first calls `__new__` to allocate raw heap memory, then passes the newly created object as the first parameter `self` into `__init__`.
+2. `self.__security_pin`:
+   - Attributes prefixed with double underscores (`__`) activate **Name Mangling**. CPython renames `__security_pin` to `_BankAccount__security_pin` internally to prevent accidental overwriting by derived subclasses.
+3. `@property` / `@balance.setter`:
+   - Turns `balance` into a managed descriptor. Callers write `acc.balance = 500` (clean, Pythonic attribute syntax), but Python invokes the setter method under the hood to enforce validation guards.
+4. `@classmethod def get_total_accounts(cls)`:
+   - Receives the class object (`cls`) rather than an individual instance. Useful for alternative constructors (e.g. `BankAccount.from_json()`) and tracking class-wide metadata.
+5. `@staticmethod def calculate_compound_interest(...)`:
+   - Behaves like a regular function placed inside the class namespace for logical grouping. It does not inspect or mutate instance or class state.
+6. `super().__init__(account_holder, initial_deposit)`:
+   - Invokes the parent class's constructor, ensuring base attributes (`self.holder`, `self._balance`) are properly initialized according to the Method Resolution Order (MRO).
 
 ---
 
@@ -1011,7 +1283,9 @@ Small object allocations (&le; 512 bytes) bypass standard OS `malloc()` to avoid
 
 ### Q2: Explain CPython's Generational Garbage Collector cycle detection algorithm.
 **Answer**:
-Reference counting cannot collect circular references (e.g., $A ightarrow B ightarrow A$). CPython solves this using a tri-generational tracing collector:
+Reference counting cannot collect circular references (e.g., $A 
+ightarrow B 
+ightarrow A$). CPython solves this using a tri-generational tracing collector:
 1. Every container is prefixed with a `PyGC_Head` struct and linked into doubly-linked lists.
 2. The GC copies `ob_refcnt` to a temporary `gc_refs` field.
 3. For all objects in the generation, the GC calls their `tp_traverse` slot and decrements `gc_refs` for all referenced children.
